@@ -8,32 +8,35 @@ import math
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+# Visualization flags
 USE_GLUT = True
 if USE_GLUT:
 	from OpenGL.GLUT import *
 
-SCREEN_SIZE = (800,600)
+SCREEN_SIZE = (1024,768)
+PERSPECTIVE = True
 
 sys.path.append('../')
 
 import rigidbody
 from matvec import Vector
 
+# Physical constants
 STATIC_FRICTION = 1.1 
-DYNAMIC_FRICTION = 0.7 #4
+DYNAMIC_FRICTION = 0.7
 GRAVITY = 9.8 
 ROLLING_RESISTANCE = 0.1
 AIR_RESISTANCE = 0.1
 
+# Sensitivity of controls
 STEERING_SENSITIVITY = 5.0
 BRAKE_UP = 3.0
 BRAKE_DOWN = 4.0
 THROTTLE_UP = 1.0
 THROTTLE_DOWN = 1.0
 
-SCREEN_SCALE = 0.001
-
-PERSPECTIVE = True
+# Size of track
+TRACK_SIZE = 1000
 
 def drawQuad( vertices, color, elevation = 0.0 ):
 	
@@ -189,8 +192,6 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 	
 	def move( self, dt, game ):
 		
-		self.forcePoints = []
-		
 		saDelta = (self.targetSteeringAngle - self.steeringAngle) * dt * STEERING_SENSITIVITY
 		self.steeringAngle += saDelta
 		
@@ -294,7 +295,6 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 			self.totalForces[ax] = axisForces[ax] + self.wheelConstraints[ax].totalForce(dt)
 			for side in (-1,1):
 				wheel = self.localToGlobal( self.wheelPos( ax, side ) )
-				self.forcePoints.append( (wheel, self.totalForces[ax] * 0.5 ) )
 		
 		self.integratePosition(dt)
 		
@@ -387,9 +387,9 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 			glTranslate( pos.x, pos.y, wheelR )
 			glRotate( math.atan2( direction.y, direction.x ) / math.pi * 180.0, 0,0,1 )
 			glRotate( 90, 1,0,0 )
-			cylH = 0.2
+			cylH = 0.3
 			glTranslate( 0,0, -cylH*0.5 )
-			glutSolidCylinder( wheelR, 0.2, 16, 1 )
+			glutSolidCylinder( wheelR, cylH, 16, 1 )
 			glPopMatrix()
 		else:
 			drawCircle3d( Vector([pos.x,pos.y,wheelR]), Vector([ax.x,ax.y,0]), wheelR, col )
@@ -413,7 +413,8 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 		glColor( 0.8, 0.5, 0.5 )
 		if USE_GLUT:
 			glPushMatrix()
-			glScale(self.width, self.height, 0.5)
+			depth = 0.5
+			glScale(self.width, self.height, depth)
 			glutSolidCube(1.0)
 			glPopMatrix()
 		else:
@@ -423,29 +424,42 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 				glVertex(v.x,v.y, 0)
 			glEnd()
 		
+		def drawLight( value, offset, width, height, color ):
+			glColor( *(color + (value,)) )
+			if not USE_GLUT: return drawBar( value, offset, width )
+			
+			glEnable(GL_BLEND)
+			glDisable(GL_LIGHTING)
+			for side in [-1,1]:
+				glPushMatrix()
+				glTranslate( -self.width * 0.5, side * (self.height * offset * 0.5), 0 )
+				glScale( 0.1, width, depth * height )
+				glutSolidCube( 1.0 )
+				glPopMatrix()
+			glEnable(GL_LIGHTING)
+			glDisable(GL_BLEND)
+		
 		def drawBar( value, offset, width, elevation = 0.01 ):
+			if USE_GLUT:
+				elevation += depth * 0.5
 			hh = self.height * 0.5 * value
 			hw = self.width * 0.5 * width
 			w0 = self.width * (offset - 0.5)
-			if USE_GLUT: elevation = 0.251
 			vert = [
-				Vector( [-hw + w0,-hh ] ),
-				Vector( [ hw + w0,-hh ] ),
-				Vector( [ hw + w0, hh ] ),
-				Vector( [-hw + w0, hh ] ) ]
+				Vector( [-hw + w0,-hh, elevation ] ),
+				Vector( [ hw + w0,-hh, elevation ] ),
+				Vector( [ hw + w0, hh, elevation ] ),
+				Vector( [-hw + w0, hh, elevation ] ) ]
 			
 			glNormal(0,0,1)
 			glBegin(GL_QUADS)
 			for v in vert:
-				glVertex(v.x, v.y, elevation)
+				glVertex(*v._e)
 			glEnd()
 		
 		# Draw throttle and brake bars
-		glColor( 1.0, 0.0, 0.0 )
-		drawBar( self.curBrake, 0.5, 0.2, 0.02 ) 
-		
-		glColor( 0.0, 1.0, 0.0 )
-		drawBar( self.curThrottle, 0.5, 0.2 ) 
+		drawLight( self.curBrake, 0.7, 0.3, 0.5, ( 1.0, 0.0, 0.0 ) ) 
+		drawLight( self.curThrottle, 0.25, 0.4, 0.1, ( 1.0, 0.7, 0.0 ) ) 
 		
 		# Traction limit indicators
 		glColor( 0.3, 0.3, 0.3 )
@@ -454,10 +468,10 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 		
 		glColor( 0.5, 0.5, 0.5 )
 		if frontTraction != None:
-			drawBar( frontTraction, 0.9, 0.1 ) 
+			drawBar( frontTraction, 0.9, 0.1, 0.02 ) 
 		
 		if rearTraction != None:
-			drawBar( rearTraction, 0.1, 0.1 ) 
+			drawBar( rearTraction, 0.1, 0.1, 0.02 ) 
 		
 		glPopMatrix()
 		
@@ -465,23 +479,13 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 		self.drawWheel( self.wheelPos( REAR, 1 ), False )
 		self.drawWheel( self.wheelPos( FRONT, -1 ), True )
 		self.drawWheel( self.wheelPos( FRONT, 1 ), True )
-		
-		#for c in self.forcePoints:
-		#	if len(c) > 2: color = c[2]
-		#	else: color = (1,0,0)
-		#	p1 = c[0] + c[1] * (2.0 / self.mass)
-		#	drawVec( c[0], p1, color )
-
-
-
-
 
 
 class Game:
 
 	def __init__(self):
 		
-		self.screenScale = SCREEN_SCALE 
+		self.screenScale = 1.0/TRACK_SIZE 
 		self.width = 1.0/self.screenScale
 		self.height = SCREENTOP/self.screenScale
 		
@@ -592,7 +596,7 @@ def resize(w, h):
 	
 	if PERSPECTIVE:
 		FOVY = 60 # Field of view angle, y dimension
-		NEARCLIP,FARCLIP = (SCREEN_SCALE*2.0, SCREEN_SCALE * 1000)
+		NEARCLIP,FARCLIP = (2.0 / TRACK_SIZE, 1000 / float(TRACK_SIZE))
 		gluPerspective(FOVY, float(SCREEN_SIZE[0])/SCREEN_SIZE[1], NEARCLIP, FARCLIP)
 	else:
 		gluOrtho2D(0, 1.0, 0, SCREENTOP)
@@ -616,6 +620,10 @@ def initpygame():
 
 	glEnable(GL_NORMALIZE)
 	glEnable(GL_DEPTH_TEST)
+	
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+	#glEnable(GL_CULL_FACE)
+	#glCullFace(GL_BACK)
 
 	glMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, (1.0, 1.0, 1.0, 1.0))
 	
