@@ -54,8 +54,15 @@ def drawPoint( p, color, size = 1.0 ):
 	glVertex(p.x,p.y,0)
 	glEnd()
 
-def drawLocalPoint( body, p, color, size = 1.0 ):
-	drawPoint( body.localToGlobal( p ), color, size )
+def drawText(textString):
+	# from http://www.pygame.org/wiki/CrossPlatformTextOpengl
+	FONT_SIZE = 30
+	FONT_COLOR = (255,255,255,255)
+	BACKGROUND_COLOR = (0,0,0,255)
+	font = pygame.font.Font (None, FONT_SIZE)
+	textSurface = font.render(textString, True, FONT_COLOR, BACKGROUND_COLOR)    
+	textData = pygame.image.tostring(textSurface, "RGBA", True)
+	glDrawPixels(textSurface.get_width(), textSurface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, textData)
 
 def drawVec( p1, p2, color ):
 	glColor( *color )
@@ -76,7 +83,6 @@ def drawCircle3d( center3d, axis3d, radius, color, npoints = 32 ):
 		p = center3d + (d1*math.sin(th) + d2*math.cos(th))*radius
 		glVertex( *p._e )
 	glEnd()
-
 
 class Track(rigidbody.Space2D):
 	
@@ -570,19 +576,11 @@ class Game:
 		self.track.render()
 		self.car.render()
 		
-		print "\r", int(self.T),
+		text = " %.01f s, " % self.T
 		vel = self.car.velocity.norm()
-		print int(vel * 3.6), "km/h",
-		tr = self.car.currentTurningRadius
-		if tr != None:
-			realTr = (self.car.turningCenter() - self.car.position).norm()
-			print int(realTr), 'm',
-			g = vel*vel / realTr / GRAVITY
-			print 'min %.2g m' % (vel*vel / (GRAVITY * STATIC_FRICTION)),
-			print '%.3g g' % g,
+		text += "%d km/h" % int(vel * 3.6)
 		
-		print "\t",
-		sys.stdout.flush()
+		drawText( text )
 		
 		#glEnable(GL_LIGHTING)
 		
