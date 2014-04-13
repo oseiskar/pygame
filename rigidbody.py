@@ -1,5 +1,7 @@
 #
-# Simple rigid body and particle classes for 3D motion
+# Simple rigid body and particle classes for 2D and 3D motion
+# Also contains some utilities for implementing a sequential
+# impulse solver
 #
 #	(c) Otto Seiskari, 2010-2014
 #	email: otto.seiskari@gmail.com

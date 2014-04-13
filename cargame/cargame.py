@@ -210,10 +210,9 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 		# compute weight transfer based on last time
 		longForces = Vector.dot(self.totalForces[FRONT] + self.totalForces[REAR], self.globalRearDrivingDir())
 		WT_RATIO = 0.05 / 2.0 # center of mass height / wheelbase
-		if self.velocity.norm > 1.0 or True:
-			weightTransfer = longForces * WT_RATIO * GRAVITY
-			self.axisWeight[FRONT] -= weightTransfer
-			self.axisWeight[REAR] += weightTransfer
+		weightTransfer = longForces * WT_RATIO * GRAVITY
+		self.axisWeight[FRONT] -= weightTransfer
+		self.axisWeight[REAR] += weightTransfer
 		
 		friction = {}
 		maxAxisFriction = {}
@@ -231,7 +230,7 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 			axisForces[ax] = Vector([0,0])
 			
 			# rolling resistance
-			if self.velocity.norm > 1.0:
+			if self.velocity.norm() > 1.0:
 				axisForces[ax] += -axisTravelDir[ax] * self.axisWeight[FRONT] * ROLLING_RESISTANCE
 		
 		BRAKE_COEFFICIENT = 0.9
@@ -241,7 +240,7 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 			coeff = STATIC_FRICTION * BRAKE_COEFFICIENT * self.curBrake
 			for ax in AXES:
 				braking = min(self.axisWeight[ax] * coeff, maxAxisFriction[ax] )
-				braking *= min( 1.0, axisVel[ax].norm )
+				braking *= min( 1.0, axisVel[ax].norm() )
 				force = - axisTravelDir[ax] * braking
 				axisForces[ax] += force
 				maxAxisFriction[ax] = frictionLeft(maxAxisFriction[ax], braking)
@@ -249,7 +248,7 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 		elif self.curThrottle > 0:
 			POWER = self.mass * 200.0
 			
-			throttleMagn = min(self.curThrottle * POWER / (self.velocity.norm + 0.5), maxAxisFriction[REAR] * 0.90)
+			throttleMagn = min(self.curThrottle * POWER / (self.velocity.norm() + 0.5), maxAxisFriction[REAR] * 0.90)
 			throttleForce = self.globalRearDrivingDir() * throttleMagn
 			axisForces[REAR] += throttleForce
 			maxAxisFriction[REAR] = frictionLeft( maxAxisFriction[REAR], throttleMagn )
@@ -261,7 +260,7 @@ class Car(rigidbody.RigidBody, rigidbody.Space2D):
 			self.wheelConstraints[REAR].noMoveDir = axdir
 		
 		# air resistance
-		self.applyForceCm( -self.velocity * self.velocity.norm * AIR_RESISTANCE )
+		self.applyForceCm( -self.velocity * self.velocity.norm() * AIR_RESISTANCE )
 		
 		self.integrateAppliedForces(dt)
 		
@@ -508,7 +507,7 @@ class Game:
 		self.T += dt
 		self.car.move(dt, self)
 		
-		if self.car.velocity.norm > 1.0:
+		if self.car.velocity.norm() > 1.0:
 			carDir = self.car.velocity
 		else:
 			carDir = self.car.globalRearDrivingDir()
@@ -568,11 +567,11 @@ class Game:
 		self.car.render()
 		
 		print "\r", int(self.T),
-		vel = self.car.velocity.norm
+		vel = self.car.velocity.norm()
 		print int(vel * 3.6), "km/h",
 		tr = self.car.currentTurningRadius
 		if tr != None:
-			realTr = (self.car.turningCenter() - self.car.position).norm
+			realTr = (self.car.turningCenter() - self.car.position).norm()
 			print int(realTr), 'm',
 			g = vel*vel / realTr / GRAVITY
 			print 'min %.2g m' % (vel*vel / (GRAVITY * STATIC_FRICTION)),

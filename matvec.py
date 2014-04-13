@@ -62,12 +62,11 @@ class Vector:
 			a._e[2]*b._e[0] - a._e[0]*b._e[2],
 			a._e[0]*b._e[1] - a._e[1]*b._e[0]] )
 	
-	@property
 	def norm( self ):
 		return math.sqrt( Vector.dot(self,self) )
 		
 	def normalize( self ):
-		self *= 1.0/self.norm
+		self *= 1.0/self.norm()
 	
 	def direction( self ):
 		v = Vector(self)
@@ -76,9 +75,12 @@ class Vector:
 	
 	def safeDirection( self ):
 		v = Vector(self)
-		l = v.norm
+		l = v.norm()
 		if l == 0.0: return v
 		else: return v * (1.0/l)
+	
+	def __str__(self):
+		return "%d-vector %s" % (self.dim, str(tuple(self._e)))
 
 class Matrix:
 	
@@ -180,4 +182,7 @@ class Matrix:
 			for j in range(self.columns):
 				r[j,i] = self[i,j]
 		return r
+	
+	def __str__(self):
+		return "%dx%d matrix %s" % (self.rows, self.columns, str(self.rowMajorArrays()))
 
