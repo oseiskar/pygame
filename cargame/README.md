@@ -1,8 +1,7 @@
 
-## Simple 2.5D car simulator
+### Simple 2.5D car simulator
 
-A car on a random track (in horrible colors). The physics simulation, which utilizes a sequential impulse solver, is two dimensional, graphics 3D.
+A car on a random track (in horrible colors). The physics simulation, which utilizes a sequential impulse solver, is two-dimensional, graphics 3D.
 
-### Controls
-
+**Controls**
 Steer with the mouse. Left button throttles, right brakes. ESC Quits.
