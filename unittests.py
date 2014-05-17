@@ -102,7 +102,7 @@ class VectorTests2D(VectorTests, unittest.TestCase):
 		self.assertEqual(v.dim, 2)
 		self.assertEqual(v.x, 3)
 		self.assertEqual(v.y, 4)
-		self.assertEqual(v.norm, 5.0)
+		self.assertEqual(v.norm(), 5.0)
 		self.assertEqual([3,4], v._e)
 	
 	def test_cross(self):
@@ -128,7 +128,7 @@ class VectorTests3D(VectorTests, unittest.TestCase):
 		self.assertEqual(v.x, 1)
 		self.assertEqual(v.y, 2)
 		self.assertEqual(v.z, 3)
-		self.assertEqual(v.norm**2, float(1+4+9))
+		self.assertEqual(v.norm()**2, float(1+4+9))
 		self.assertEqual([1,2,3], v._e)
 
 class MatrixTests(unittest.TestCase):
